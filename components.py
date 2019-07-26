@@ -43,11 +43,6 @@ def syntax_chunk(tokenised):
     for tree in result['tree']:
         if type(tree) == nltk.tree.Tree:
             result['phrases'].append(" ".join([i[0] for i in tree.leaves()])) 
-    
-    result['verb'] = []
-    for item in result['tree'][0]:
-        if type(item) == nltk.tree.Tree and item.label() == "V":
-            result['verb'].append(item)
 
     return result
    
@@ -86,9 +81,3 @@ def syntax_analysis(lo):
 
 def is_root_verb(d_tree):
     return True if list(filter(lambda x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]['pos'] == enums.PartOfSpeech.Tag.VERB else False
-
-#def get_bt_category(verb):
-    # TODO: fetch bt category by checking sysnonyms of the verb
-    # get synset for verb based of lesk in context with the whole lo
-    # for each category, path_similarity the verb to the category
-    # return match with the highest score
