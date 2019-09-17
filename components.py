@@ -1,5 +1,5 @@
 import nltk
-
+from textstat.textstat import textstatistics, easy_word_set, legacy_round
 import six
 from google.cloud import language
 from google.cloud.language import enums
@@ -21,7 +21,6 @@ gcp_to_nltk_pos_tags = {
     enums.PartOfSpeech.Tag.AFFIX: '.'
 }
 
-
 # TODO: separate the parsing stuff
 def syntax_chunk(tokenised):
 
@@ -34,7 +33,6 @@ def syntax_chunk(tokenised):
     """
     
     parser = nltk.RegexpParser(pattern)
-    st = nltk.tag.stanford.StanfordPOSTagger('./stanford-postagger/models/english-bidirectional-distsim.tagger', './stanford-postagger/stanford-postagger.jar')
     
     result['tree'] = parser.parse(tokenised)
 
@@ -45,13 +43,17 @@ def syntax_chunk(tokenised):
             result['phrases'].append(" ".join([i[0] for i in tree.leaves()])) 
 
     return result
-   
+  
+
+    result = space.load('en')(text)
+    return result.sents
+
 def basic_stats(lo):
     #
     return 1
 
 # TODO: rename it away from syntax_analysis
-def syntax_analysis(lo):
+def pre_processing(lo):
     # Call the natural language api
     client = language.LanguageServiceClient()
     document = types.Document(content=lo, type=enums.Document.Type.PLAIN_TEXT);
@@ -77,7 +79,22 @@ def syntax_analysis(lo):
             'salience': item.salience, 
         }   
 
-    return result
+    return result 
 
 def is_root_verb(d_tree):
     return True if list(filter(lambda x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]['pos'] == enums.PartOfSpeech.Tag.VERB else False
+
+def avg_sentence_length(text):
+    sentences = nltk.sent_tokenize(text)
+    words = nltk.tokenize.word_tokenize(text)
+
+    return float(len(words)/len(sentences))
+
+def avg_syllables_per_word(text):
+    return textstatistics().syllable_count(text) 
+
+# text => string 
+def flesch_reading_ease(text):
+    FRE = 206.835 - float(1.015 * avg_sentence_length(text)) -\
+          float(84.6 * avg_syllables_per_word(text)) 
+    return legacy_round(FRE, 2) 
