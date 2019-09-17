@@ -48,10 +48,6 @@ def syntax_chunk(tokenised):
     result = space.load('en')(text)
     return result.sents
 
-def basic_stats(lo):
-    #
-    return 1
-
 # TODO: rename it away from syntax_analysis
 def pre_processing(lo):
     # Call the natural language api
@@ -91,7 +87,9 @@ def avg_sentence_length(text):
     return float(len(words)/len(sentences))
 
 def avg_syllables_per_word(text):
-    return textstatistics().syllable_count(text) 
+    syllable_count = textstatistics().syllable_count(text) 
+    word_count = len(nltk.tokenize.word_tokenize(text))
+    return legacy_round(float(syllable_count/word_count), 1)
 
 # text => string 
 def flesch_reading_ease(text):
