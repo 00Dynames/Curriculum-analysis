@@ -1,4 +1,4 @@
-import sample
+from tests import sample
 import components
 import sys
 

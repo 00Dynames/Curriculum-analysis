@@ -2,7 +2,7 @@ import sqlite3
 import sys
 import json
 
-conn = sqlite3.connect('./data/database.sqlite')
+conn = sqlite3.connect('../data/database.sqlite')
 cursor = conn.cursor()
 cursor.execute("select l.description from acad_objects as a, learning_outcomes as l where a.type='course' and a.id=l.acad_object order by random()")
 
