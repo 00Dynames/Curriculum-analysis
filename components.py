@@ -1,4 +1,5 @@
 import nltk
+from nltk.corpus import wordnet
 from textstat.textstat import textstatistics, easy_word_set, legacy_round
 import six
 from google.cloud import language
@@ -21,7 +22,7 @@ gcp_to_nltk_pos_tags = {
     enums.PartOfSpeech.Tag.AFFIX: '.'
 }
 
-# TODO: separate the parsing stuff
+# TODO: return a score
 def syntax_chunk(tokenised):
 
     result = {}
@@ -48,7 +49,6 @@ def syntax_chunk(tokenised):
     result = space.load('en')(text)
     return result.sents
 
-# TODO: rename it away from syntax_analysis
 def pre_processing(lo):
     # Call the natural language api
     client = language.LanguageServiceClient()
@@ -57,10 +57,8 @@ def pre_processing(lo):
     e_result = client.analyze_entities(document)
 
     result = {}
-    # TODO: map gcp pos enum to a standard
     result['pos'] = [(word.text.content, gcp_to_nltk_pos_tags[word.part_of_speech.tag]) for word in s_result.tokens]
     
-    # TODO: make dependency tree
     result['d_tree'] = [{'text': word.text.content, 'd_label': word.dependency_edge.label, 'pos': word.part_of_speech.tag} for word in s_result.tokens]
 
     result['sentences'] = {
@@ -78,7 +76,7 @@ def pre_processing(lo):
     return result 
 
 def is_root_verb(d_tree):
-    return True if list(filter(lambda x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]['pos'] == enums.PartOfSpeech.Tag.VERB else False
+    return 1 if list(filter(lambda x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]['pos'] == enums.PartOfSpeech.Tag.VERB else 0
 
 def avg_sentence_length(text):
     sentences = nltk.sent_tokenize(text)
@@ -95,4 +93,33 @@ def avg_syllables_per_word(text):
 def flesch_reading_ease(text):
     FRE = 206.835 - float(1.015 * avg_sentence_length(text)) -\
           float(84.6 * avg_syllables_per_word(text)) 
-    return legacy_round(FRE, 2) 
+    return legacy_round(FRE, 2)
+
+def salience_avg(lo):
+    # TODO: take the mean of the entity saliences and return that as a score
+    result = 0
+    for e in lo['entites'].keys():
+       result =+ lo['entities'][e]['salience']
+
+    result = float(result / len(lo['entities']))
+
+    return result
+
+def verb_category(verb):
+    bt_categories = {
+        'KNOWLEDGE': wordnet.synset('know.v.11'),
+        'COMPREHENSION': wordnet.synset('understand.v.01'),
+        'APPLICATION': wordnet.synset('apply.v.02'),
+        'ANALYSIS': wordnet.synset('analyze.v.01'),
+        'SYNTHESIS': wordnet.synset('synthesize.v.01'),
+        'EVALUATION': wordnet.synset('evaluate.v.02')       
+    }
+    
+    # TODO: improve the filtering, actually validate(?) that we're using the right synset here
+    syn_verb = wordnet.synset(verb)[0]
+
+    similarities = []
+    for category in bt_categories.keys():
+        similarities.append((category, syn_verb.wup_similarity(bt_categories[category])))
+   
+    return max(similarities, key = lambda x: x[1])
