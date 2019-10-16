@@ -23,7 +23,7 @@ gcp_to_nltk_pos_tags = {
 }
 
 # TODO: return a score
-def syntax_chunk(tokenised):
+def syntax_chunk(tokenised): 
 
     result = {}
     pattern = """
@@ -57,6 +57,7 @@ def pre_processing(lo):
     e_result = client.analyze_entities(document)
 
     result = {}
+    result['text'] = lo
     result['pos'] = [(word.text.content, gcp_to_nltk_pos_tags[word.part_of_speech.tag]) for word in s_result.tokens]
     
     result['d_tree'] = [{'text': word.text.content, 'd_label': word.dependency_edge.label, 'pos': word.part_of_speech.tag} for word in s_result.tokens]
@@ -76,7 +77,8 @@ def pre_processing(lo):
     return result 
 
 def is_root_verb(d_tree):
-    return 1 if list(filter(lambda x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]['pos'] == enums.PartOfSpeech.Tag.VERB else 0
+    verb = list(filter(lambda  x: x['d_label'] == enums.DependencyEdge.Label.ROOT, d_tree))[0]
+    return (1, verb['text']) if verb['pos'] == enums.PartOfSpeech.Tag.VERB else (0, "")
 
 def avg_sentence_length(text):
     sentences = nltk.sent_tokenize(text)
@@ -88,6 +90,13 @@ def avg_syllables_per_word(text):
     syllable_count = textstatistics().syllable_count(text) 
     word_count = len(nltk.tokenize.word_tokenize(text))
     return legacy_round(float(syllable_count/word_count), 1)
+
+# metrics + algorithms of how you got them
+# what are the statistical properties of it/them
+# how to go about validating them
+# measure consistency => properly identify 
+# boruta algorithm -> ???
+# tenfold validation
 
 # text => string 
 def flesch_reading_ease(text):
@@ -116,10 +125,22 @@ def verb_category(verb):
     }
     
     # TODO: improve the filtering, actually validate(?) that we're using the right synset here
-    syn_verb = wordnet.synset(verb)[0]
+    syn_verb = wordnet.synsets(verb)[0]
 
     similarities = []
     for category in bt_categories.keys():
-        similarities.append((category, syn_verb.wup_similarity(bt_categories[category])))
-   
+        similarities.append((category, wordnet.path_similarity(bt_categories[category], syn_verb)))
+  
     return max(similarities, key = lambda x: x[1])
+
+def aggregate(inputs):
+    # root verb
+    # TODO: syntax chunk
+    # sentence count
+    # TODO: syntactic complexity
+
+    COMPONENT_COUNT = 3
+
+    result = (inputs['salience_avg'] + inputs['reading_ease'] + inputs['verb_category']) / COMPONENT_COUNT
+
+    return result
