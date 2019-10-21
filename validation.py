@@ -18,14 +18,18 @@ for lo in s:
     lo_result['text'] = lo
     lo_result['flesch_reading_ease'] = components.flesch_reading_ease(lo_processed['text'])
     lo_result['verb_root'], lo_result['verb'] = components.is_root_verb(lo_processed['d_tree'])
- 
+    lo_result['salience_average'] = components.salience_avg(lo_processed)
+
     if lo_result['verb'] != "":
         lo_result['verb_category'] = components.verb_category(lo_result['verb'])
     else: 
-        lo_result['verb_category'] = ""
+        lo_result['verb_category'] = ("", 0)
 
     lo_result['sentence_count'] = lo_processed['sentences']['count']
-    
+   
+    ag = components.aggregate(lo_result)
+    lo_result['aggregate'] = ag
+
     result.append(lo_result)
 
 with open("%s_result.json"%(sys.argv[1]), 'w') as fp:

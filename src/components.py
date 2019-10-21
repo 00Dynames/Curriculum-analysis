@@ -91,23 +91,14 @@ def avg_syllables_per_word(text):
     word_count = len(nltk.tokenize.word_tokenize(text))
     return legacy_round(float(syllable_count/word_count), 1)
 
-# metrics + algorithms of how you got them
-# what are the statistical properties of it/them
-# how to go about validating them
-# measure consistency => properly identify 
-# boruta algorithm -> ???
-# tenfold validation
-
-# text => string 
 def flesch_reading_ease(text):
     FRE = 206.835 - float(1.015 * avg_sentence_length(text)) -\
           float(84.6 * avg_syllables_per_word(text)) 
     return legacy_round(FRE, 2)
 
 def salience_avg(lo):
-    # TODO: take the mean of the entity saliences and return that as a score
     result = 0
-    for e in lo['entites'].keys():
+    for e in lo['entities'].keys():
        result =+ lo['entities'][e]['salience']
 
     result = float(result / len(lo['entities']))
@@ -134,13 +125,17 @@ def verb_category(verb):
     return max(similarities, key = lambda x: x[1])
 
 def aggregate(inputs):
-    # root verb
     # TODO: syntax chunk
-    # sentence count
     # TODO: syntactic complexity
+    
+    print(inputs)
 
-    COMPONENT_COUNT = 3
-
-    result = (inputs['salience_avg'] + inputs['reading_ease'] + inputs['verb_category']) / COMPONENT_COUNT
+    result = (
+            (inputs['salience_average'] * 0.1) + 
+            (inputs['flesch_reading_ease'] * 0.5) + 
+            (inputs['verb_category'][1] * 0.1) + 
+            (inputs['verb_root'] * 0.2) +
+            (inputs['sentence_count'] * 0.1)
+        )
 
     return result
